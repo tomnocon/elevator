@@ -1,5 +1,8 @@
-package com.tingco.codetest.elevator.api;
+package com.tingco.codetest.elevator.service;
 
+import com.tingco.codetest.elevator.api.Elevator;
+import com.tingco.codetest.elevator.api.ElevatorController;
+import com.tingco.codetest.elevator.api.ElevatorEventPublisher;
 import com.tingco.codetest.elevator.api.events.ElevatorEvent;
 import com.tingco.codetest.elevator.api.events.ElevatorMoved;
 import com.tingco.codetest.elevator.api.events.ElevatorReleased;
@@ -9,38 +12,27 @@ import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ElevatorControllerTests {
-
-    @Test
-    void shouldFollowFloorDirection() {
-        // Arrange
-        val desiredFloor = 2;
-        ElevatorController elevatorController = null;
-
-        // Act
-        val elevator = elevatorController.requestElevator(desiredFloor);
-
-        // Assert
-        assertEquals(Elevator.Direction.UP, elevator.getDirection());
-        assertEquals(desiredFloor, elevator.getAddressedFloor());
-    }
+public class ThreadedElevatorControllerTests {
 
     @Test
     void shouldQueueElevatorRequests() {
         // Arrange
         val events = new LinkedList<ElevatorEvent>();
         ElevatorEventPublisher publisher = events::add;
-        ManualStepExecutor manualExecutor = null;
-        ElevatorController elevatorController = null; // one elevator available
+        val manualRunner = new ManualStepRunner();
+        ElevatorController elevatorController = new ThreadedElevatorController(1, Executors.newSingleThreadExecutor(), manualRunner, publisher);
 
         // Act
         val firstRequest = elevatorController.requestElevator(2);
         val secondRequest = elevatorController.requestElevator(4);
-        manualExecutor.allSteps();
+        manualRunner.allSteps();
+        waitForElevators(firstRequest, secondRequest);
 
         // Asset
         val elevatorMoves = ofEventTypes(events, ElevatorMoved.class);
@@ -58,17 +50,18 @@ public class ElevatorControllerTests {
     }
 
     @Test
-    void shouldHandleMultipleElevators() {
+    void shouldHandleMultipleElevators() throws InterruptedException {
         // Arrange
         val events = new LinkedList<ElevatorEvent>();
         ElevatorEventPublisher publisher = events::add;
-        ManualStepExecutor manualExecutor = null;
-        ElevatorController elevatorController = null; // two elevators available
+        val manualRunner = new ManualStepRunner();
+        ElevatorController elevatorController = new ThreadedElevatorController(2, Executors.newSingleThreadExecutor(), manualRunner, publisher);
 
         // Act
         val firstElevator = elevatorController.requestElevator(2);
         val secondElevator = elevatorController.requestElevator(1);
-        manualExecutor.allSteps();
+        manualRunner.allSteps();
+        waitForElevators(firstElevator, secondElevator);
 
         // Asset
         val elevatorMoves = ofEventTypes(events, ElevatorMoved.class);
@@ -80,7 +73,6 @@ public class ElevatorControllerTests {
         assertEquals(2, elevatorRequests.size());
         assertEquals(2, elevatorReleases.size());
     }
-
 
 
     static <T> List<T> ofEventTypes(List<?> events, Class<T> type) {
@@ -95,6 +87,18 @@ public class ElevatorControllerTests {
         return events.stream()
                 .filter(event -> event.getElevatorId() == elevatorId)
                 .collect(Collectors.toList());
+    }
+
+    static void waitForElevators(Elevator... elevators) {
+        for (val elevator : elevators) {
+            while (elevator.isBusy()) {
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        }
     }
 
 }

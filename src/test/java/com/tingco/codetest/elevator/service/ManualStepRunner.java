@@ -1,13 +1,15 @@
-package com.tingco.codetest.elevator.api;
+package com.tingco.codetest.elevator.service;
+
+import com.tingco.codetest.elevator.api.ElevatorStepRunner;
 
 import java.util.concurrent.Semaphore;
 
-public class ManualStepExecutor implements ElevatorStepExecutor {
+public class ManualStepRunner implements ElevatorStepRunner {
 
-    private final Semaphore semaphore = new Semaphore(0, true);
+    private final Semaphore semaphore = new Semaphore(0);
 
     @Override
-    public void execute() {
+    public void run() {
         try {
             semaphore.acquire();
         } catch (InterruptedException ex) {

@@ -52,3 +52,26 @@ or start the target JAR file
     mvn package
     java -jar target/elevator-1.0-SNAPSHOT.jar
 
+## Rest endpoints
+
+* GET `/rest/v1/elevators` - Retrieves current state from all elevators 
+* GET `/rest/v1/elevators/{id}` - Retrieves elevator state with a given identifier
+* GET `/rest/v1/elevators/floors/{floor}` - Requests for an elevator to a given floor
+* GET `/rest/v1/live-elevators/{id}` - Receives live updates from a given elevator identifier
+* GET `/rest/v1/live-elevators` - Receives live updates from all elevators
+
+The solution can be simulated using a web browser.
+
+## Possible improvements
+
+### Elevator election
+
+A naive algorithm is implemented - the idle or random elevator is elected.
+The algorithm can be improved by electing the nearest elevator which is on the way.
+
+### Elevator traversal
+
+Currently, all floor requests are queued and handled separately in FIFO order.
+Here are some improvements that can be added:
+* handle requests that are on the way
+* use priority queue to handle the nearest request first
