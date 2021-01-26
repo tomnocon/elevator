@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.tingco.codetest</groupId>
 	<artifactId>elevator</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0-SNAPSHOT</version>
 	<name>elevator-codetest</name>
 	<description>Coding challenge for the curious</description>
 	<properties>
