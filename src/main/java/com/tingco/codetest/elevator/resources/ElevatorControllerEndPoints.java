@@ -2,19 +2,15 @@ package com.tingco.codetest.elevator.resources;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.tingco.codetest.elevator.api.Elevator;
 import com.tingco.codetest.elevator.api.ElevatorController;
 import com.tingco.codetest.elevator.api.events.ElevatorEvent;
 import com.tingco.codetest.elevator.resources.model.ElevatorModel;
 import lombok.val;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -79,7 +75,7 @@ public final class ElevatorControllerEndPoints {
     @GetMapping(value = "/live-elevators/{id}")
     public SseEmitter liveElevator(@PathVariable Integer id) {
         val emitter = new SseEmitter();
-        val listener = new ElevatorEventListener(emitter, eventBus, elevatorId -> elevatorId.equals(id));
+        val listener = new ElevatorEventListener(emitter, eventBus, elevator -> elevator.getElevatorId().equals(id));
         listener.register();
         return emitter;
     }
@@ -87,17 +83,17 @@ public final class ElevatorControllerEndPoints {
     @GetMapping(value = "/live-elevators")
     public SseEmitter liveElevators() {
         val emitter = new SseEmitter();
-        val listener = new ElevatorEventListener(emitter, eventBus, elevatorId -> true);
+        val listener = new ElevatorEventListener(emitter, eventBus, elevator -> true);
         listener.register();
         return emitter;
     }
 
     static class ElevatorEventListener {
-        private final Predicate<Integer> elevatorFilter;
+        private final Predicate<ElevatorEvent> elevatorFilter;
         private final SseEmitter emitter;
         private final EventBus eventBus;
 
-        public ElevatorEventListener(SseEmitter emitter, EventBus eventBus,Predicate<Integer> elevatorFilter) {
+        public ElevatorEventListener(SseEmitter emitter, EventBus eventBus,Predicate<ElevatorEvent> elevatorFilter) {
             this.elevatorFilter = elevatorFilter;
             this.emitter = emitter;
             this.eventBus = eventBus;
@@ -106,7 +102,7 @@ public final class ElevatorControllerEndPoints {
         @Subscribe
         public void onEvent(ElevatorEvent event) {
             try {
-                if(elevatorFilter.test(event.getElevatorId())){
+                if(elevatorFilter.test(event)){
                     emitter.send(event);
                 }
             } catch(Exception e) {

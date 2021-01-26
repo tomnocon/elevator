@@ -50,7 +50,7 @@ public class ThreadedElevatorControllerTests {
     }
 
     @Test
-    void shouldHandleMultipleElevators() throws InterruptedException {
+    void shouldHandleMultipleElevators() {
         // Arrange
         val events = new LinkedList<ElevatorEvent>();
         ElevatorEventPublisher publisher = events::add;
